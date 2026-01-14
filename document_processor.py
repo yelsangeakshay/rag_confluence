@@ -33,12 +33,13 @@ class DocumentProcessor:
             separators=["\n\n", "\n", ". ", " ", ""]
         )
     
-    def chunk_documents(self, pages: List[Dict]) -> List[Dict]:
+    def chunk_documents(self, pages: List[Dict], source_type: str = 'confluence') -> List[Dict]:
         """
         Chunk documents into smaller pieces with metadata
         
         Args:
-            pages: List of page dictionaries with 'title', 'content', 'id', 'url'
+            pages: List of page/issue dictionaries with 'title', 'content', 'id', 'url'
+            source_type: Type of source ('confluence' or 'jira')
             
         Returns:
             List of chunk dictionaries with content and metadata
@@ -52,34 +53,53 @@ class DocumentProcessor:
                 
                 # Create chunk documents with metadata
                 for i, chunk in enumerate(text_chunks):
-                    chunk_doc = {
-                        'content': chunk,
-                        'metadata': {
-                            'page_id': page.get('id'),
-                            'page_title': page.get('title'),
-                            'page_url': page.get('url'),
-                            'chunk_index': i,
-                            'space': page.get('space', 'unknown')
+                    if source_type == 'jira':
+                        chunk_doc = {
+                            'content': chunk,
+                            'metadata': {
+                                'issue_id': page.get('id'),
+                                'issue_key': page.get('key'),
+                                'page_title': page.get('title'),
+                                'page_url': page.get('url'),
+                                'chunk_index': i,
+                                'project': page.get('project', 'unknown'),
+                                'status': page.get('status', ''),
+                                'issue_type': page.get('issue_type', ''),
+                                'priority': page.get('priority', ''),
+                                'source_type': 'jira'
+                            }
                         }
-                    }
+                    else:  # confluence
+                        chunk_doc = {
+                            'content': chunk,
+                            'metadata': {
+                                'page_id': page.get('id'),
+                                'page_title': page.get('title'),
+                                'page_url': page.get('url'),
+                                'chunk_index': i,
+                                'space': page.get('space', 'unknown'),
+                                'source_type': 'confluence'
+                            }
+                        }
                     all_chunks.append(chunk_doc)
             
             except Exception as e:
-                logger.warning(f"Error chunking page {page.get('id')}: {e}")
+                logger.warning(f"Error chunking document {page.get('id')}: {e}")
                 continue
         
-        logger.info(f"Created {len(all_chunks)} chunks from {len(pages)} pages")
+        logger.info(f"Created {len(all_chunks)} chunks from {len(pages)} {source_type} documents")
         return all_chunks
     
-    def process_pages(self, pages: List[Dict]) -> List[Dict]:
+    def process_pages(self, pages: List[Dict], source_type: str = 'confluence') -> List[Dict]:
         """
-        Process pages: chunk them and return formatted documents
+        Process pages/issues: chunk them and return formatted documents
         
         Args:
-            pages: List of page dictionaries
+            pages: List of page/issue dictionaries
+            source_type: Type of source ('confluence' or 'jira')
             
         Returns:
             List of processed chunk documents
         """
-        return self.chunk_documents(pages)
+        return self.chunk_documents(pages, source_type=source_type)
 

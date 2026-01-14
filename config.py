@@ -11,6 +11,11 @@ CONFLUENCE_URL = os.getenv("CONFLUENCE_URL", "")
 CONFLUENCE_USERNAME = os.getenv("CONFLUENCE_USERNAME", "")
 CONFLUENCE_API_TOKEN = os.getenv("CONFLUENCE_API_TOKEN", "")
 
+# JIRA Configuration
+JIRA_URL = os.getenv("JIRA_URL", "")
+JIRA_USERNAME = os.getenv("JIRA_USERNAME", "")
+JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN", "")
+
 # Google Gemini API Configuration
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 GEMINI_MODEL = "gemini-1.5-flash"  # Options: "gemini-1.5-flash" (faster), "gemini-1.5-pro" (more capable)
@@ -18,6 +23,7 @@ GEMINI_MODEL = "gemini-1.5-flash"  # Options: "gemini-1.5-flash" (faster), "gemi
 # Vector Store Configuration
 VECTOR_STORE_PATH = "./chroma_db"
 COLLECTION_NAME = "confluence_docs"
+JIRA_COLLECTION_NAME = "jira_issues"
 
 # RAG Configuration
 CHUNK_SIZE = 1000  # Characters per chunk
@@ -25,6 +31,6 @@ CHUNK_OVERLAP = 200  # Overlap between chunks
 TOP_K_RESULTS = 4  # Number of relevant chunks to retrieve
 
 # Streamlit Configuration
-APP_TITLE = "Confluence RAG QA Bot"
+APP_TITLE = "Confluence & JIRA RAG QA Bot"
 PAGE_ICON = "🤖"
 

@@ -15,7 +15,7 @@ class RAGPipeline:
     RAG Pipeline that combines retrieval and generation
     """
     
-    def __init__(self, vector_store, api_key: str = None, model_name: str = None):
+    def __init__(self, vector_store, api_key: str = None, model_name: str = None, source_type: str = "confluence"):
         """
         Initialize RAG Pipeline
         
@@ -27,6 +27,7 @@ class RAGPipeline:
         self.vector_store = vector_store
         self.api_key = api_key or config.GOOGLE_API_KEY
         self.model_name = model_name or config.GEMINI_MODEL
+        self.source_type = source_type
         
         if not self.api_key:
             raise ValueError("Google API key is required for RAG pipeline")
@@ -55,13 +56,35 @@ class RAGPipeline:
             logger.error(f"Error initializing LLM: {e}")
             raise
         
-        # Create prompt template
-        self.prompt_template = """You are a helpful assistant that answers questions based on the provided context from Confluence documentation.
+        # Create prompt template (updated based on source type)
+        self.prompt_template = self._build_prompt_template()
+
+    def _build_prompt_template(self) -> str:
+        if self.source_type == "jira":
+            return """You are a helpful assistant that answers questions using the provided context from JIRA issues.
+
+Instructions:
+- The user may not know issue keys or exact titles; interpret the intent and find relevant issues from the context.
+- Answer using ONLY the information provided in the context.
+- If the context doesn't contain enough information, say so clearly.
+- Cite issue keys/titles when relevant.
+- Provide a concise status-oriented summary (status, priority, assignee) when asked about project status.
+- If the question asks for overall status, clarify that the answer reflects only the retrieved issues.
+- If you don't know the answer, admit it rather than making something up.
+
+Context from JIRA:
+{context}
+
+Question: {question}
+
+Provide a helpful answer based on the context above:"""
+
+        return """You are a helpful assistant that answers questions based on the provided context from Confluence documentation.
 
 Instructions:
 - Answer the question using ONLY the information provided in the context
 - If the context doesn't contain enough information, say so clearly
-- Cite the source pages when relevant
+- Cite the source pages/issues when relevant
 - Be concise and accurate
 - If you don't know the answer, admit it rather than making something up
 
@@ -95,7 +118,17 @@ Provide a helpful answer based on the context above:"""
             for i, result in enumerate(results, 1):
                 page_title = result['metadata'].get('page_title', 'Unknown')
                 content = result['content']
-                context_parts.append(f"[Source {i}: {page_title}]\n{content}\n")
+                source_type = result['metadata'].get('source_type', 'confluence')
+                
+                # Add additional context based on source type
+                if source_type == 'jira':
+                    issue_key = result['metadata'].get('issue_key', '')
+                    status = result['metadata'].get('status', '')
+                    issue_type = result['metadata'].get('issue_type', '')
+                    title_with_key = f"{issue_key} - {page_title}" if issue_key else page_title
+                    context_parts.append(f"[Source {i}: {title_with_key} (Type: {issue_type}, Status: {status})]\n{content}\n")
+                else:
+                    context_parts.append(f"[Source {i}: {page_title}]\n{content}\n")
             
             return "\n".join(context_parts)
         except Exception as e:

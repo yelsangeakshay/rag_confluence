@@ -59,11 +59,13 @@ class VectorStore:
             metadatas = []
             
             for i, chunk in enumerate(chunks):
-                # Create unique ID
-                chunk_id = f"{chunk['metadata']['page_id']}_chunk_{chunk['metadata']['chunk_index']}"
+                # Create unique ID - handle both Confluence and JIRA
+                metadata = chunk['metadata']
+                source_id = metadata.get('page_id') or metadata.get('issue_id') or metadata.get('issue_key', f"doc_{i}")
+                chunk_id = f"{source_id}_chunk_{metadata.get('chunk_index', i)}"
                 ids.append(chunk_id)
                 documents.append(chunk['content'])
-                metadatas.append(chunk['metadata'])
+                metadatas.append(metadata)
             
             # Add to collection
             self.collection.add(
